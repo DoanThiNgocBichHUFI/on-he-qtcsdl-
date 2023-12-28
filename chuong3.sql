@@ -1092,10 +1092,12 @@ ON KETQUA
 AFTER INSERT, UPDATE, DELETE
 AS
 BEGIN
-    DECLARE @MaSV varchar(10)
+    -- Tạo bảng tạm thời để lưu trữ MaSV
+    DECLARE @MaSVTable TABLE (MaSV varchar(10))
     
     -- Lấy danh sách các sinh viên bị ảnh hưởng
-    SELECT DISTINCT @MaSV = MaSV FROM inserted
+    INSERT INTO @MaSVTable
+    SELECT DISTINCT MaSV FROM inserted
     UNION
     SELECT DISTINCT MaSV FROM deleted
     
@@ -1106,8 +1108,9 @@ BEGIN
         FROM KETQUA 
         WHERE KETQUA.MaSV = SINHVIEN.MaSV
     )
-    WHERE MaSV IN (SELECT @MaSV);
+    WHERE MaSV IN (SELECT MaSV FROM @MaSVTable);
 END;
+
 
 --9.3. Dùng cấu trúc trigger viết ràng buộc toàn vẹn thực hiện kiểm tra mỗi sinh viên chỉ
 --được đăng ký tối đa 3 môn trong mỗi học kỳ.
@@ -1148,7 +1151,7 @@ BEGIN
         WHERE DangKy.SoMonDangKy > 3
     )
     BEGIN
-        RAISERROR (N'Mỗi sinh viên chỉ được đăng ký tối đa 3 môn trong mỗi học kỳ.', 16, 1)
+        RAISERROR (N'Mỗi sinh viên chỉ được đăng ký tối đa 3 môn trong mỗi học kỳ.', 16, 1) 
         ROLLBACK
         RETURN
     END
@@ -1165,16 +1168,17 @@ BEGIN
     SELECT DISTINCT @MaSV = MaSV, @HocKy = HocKy FROM inserted
     
     -- Kiểm tra số lượng môn đăng ký của sinh viên trong học kỳ
-    IF (
+    IF (	
         SELECT COUNT(*) 
         FROM KETQUA 
         WHERE MaSV = @MaSV AND HocKy = @HocKy
     ) > 3
     BEGIN
-        RAISEERROR (N'Sinh viên chỉ được đăng ký tối đa 3 môn trong mỗi học kỳ.', 16, 1)
+        RAISERROR (N'Sinh viên chỉ được đăng ký tối đa 3 môn trong mỗi học kỳ.', 16, 1) with nowait
         ROLLBACK
+		return 
     END
-END;
+END
 
 --9.4. Dùng cấu trúc trigger viết ràng buộc toàn vẹn thực hiện kiểm tra mỗi sinh viên chỉ
 --đăng ký tối đa 10 tín chỉ của môn học bắt buộc trong mỗi học kỳ.
@@ -1217,34 +1221,14 @@ BEGIN
         WHERE KETQUA.MaSV = @MaSV AND KETQUA.HocKy = @HocKy AND MonHoc.BatBuoc = N'Có'
     ) > 10
     BEGIN
-        RAISEERROR (N'Sinh viên chỉ được đăng ký tối đa 10 tín chỉ của môn học bắt buộc trong mỗi học kỳ.', 16, 1)
+        RAISERROR (N'Sinh viên chỉ được đăng ký tối đa 10 tín chỉ của môn học bắt buộc trong mỗi học kỳ.', 16, 1)
         ROLLBACK
     END
 END;
 
 ---------------c3
-CREATE TRIGGER trg_CheckMaxCreditHours
-ON KetQua
-FOR INSERT, UPDATE
-AS
-BEGIN
-    -- Kiểm tra số lượng tín chỉ của môn học bắt buộc của sinh viên
-    IF EXISTS (
-        SELECT MaSV
-        FROM (
-            SELECT MaSV, SUM(TinChi) AS TongTinChi
-            FROM KetQua
-            WHERE HocKy = (SELECT DISTINCT HocKy FROM inserted)
-            GROUP BY MaSV
-        ) AS DangKy
-        WHERE DangKy.TongTinChi > 10
-    )
-    BEGIN
-        RAISERROR (N"Mỗi sinh viên chỉ được đăng ký tối đa 10 tín chỉ của môn học bắt buộc trong mỗi học kỳ.", 16, 1)
-        ROLLBACK
-        RETURN
-    END
-END
+
+
 
 --9.5. Viết trigger thực hiện điền giá trị vào cột XEPLOAI dựa vào cột DIEMTB với điều
 --kiện như sau:
@@ -1276,13 +1260,13 @@ ON SINHVIEN
 AFTER INSERT, UPDATE
 AS
 BEGIN
-    UPDATE SINHVIEN
+    UPDATE SINHVIEN 
     SET XEPLOAI = 
         CASE 
-            WHEN DIEMTB < 5 THEN N'Yếu'
-            WHEN DIEMTB >= 5 AND DIEMTB < 7 THEN N'Trung bình'
-            WHEN DIEMTB >= 7 AND DIEMTB < 8 THEN N'Khá'
-            WHEN DIEMTB >= 8 THEN N'Giỏi'
+            WHEN SINHVIEN.DIEMTB < 5 THEN N'Yếu'
+            WHEN SINHVIEN.DIEMTB >= 5 AND SINHVIEN.DIEMTB < 7 THEN N'Trung bình'
+            WHEN SINHVIEN.DIEMTB >= 7 AND SINHVIEN.DIEMTB < 8 THEN N'Khá'
+            WHEN SINHVIEN.DIEMTB >= 8 THEN N'Giỏi'
             ELSE NULL  -- Xử lý trường hợp khác (nếu có)
         END
     FROM inserted
@@ -1297,10 +1281,12 @@ BEGIN
     -- Cập nhật giá trị XEPLOAI dựa vào giá trị DIEMTB
     UPDATE SinhVien
     SET XEPLOAI = CASE
-        WHEN DIEMTB < 5 THEN 'Yếu'
-        WHEN DIEMTB >= 5 AND DIEMTB < 7 THEN 'Trung bình'
-        WHEN DIEMTB >= 7 AND DIEMTB < 8 THEN 'Khá'
-        WHEN DIEMTB >= 8 THEN 'Giỏi'
+        WHEN SinhVien.DIEMTB < 5 THEN N'Yếu'
+        WHEN SinhVien.DIEMTB >= 5 AND SinhVien.DIEMTB < 7 THEN N'Trung bình'
+        WHEN SinhVien.DIEMTB >= 7 AND SinhVien.DIEMTB < 8 THEN N'Khá'
+        WHEN SinhVien.DIEMTB >= 8 THEN N'Giỏi'
         END
     WHERE MaSV IN (SELECT DISTINCT MaSV FROM inserted)
 END
+
+
