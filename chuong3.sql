@@ -895,14 +895,83 @@ select *from ChiTietHD
 
 --7.7. Viết thủ tục truyền vào tham số mã hàng sẽ trả về tên hàng, tên nhà sản xuất và tên
 --nhà cung cấp tương ứng.
+CREATE PROCEDURE GetProductDetails
+@MaHang VARCHAR(10)
+AS
+BEGIN
+	SELECT TenHang, TenNhaSanXuat, TenNhaCungCap 
+	FROM HangHoa 
+	WHERE MaHang = @MaHang
+END
 --7.8. Để kiểm tra một khách hàng thuộc loại nào (‘VIP”, ‘KH thành viên”, “KH thân
 --thiết”) cần viết một thủ tục truyền vào tham số mã khách hàng sẽ trả về ‘VIP’nếu
 --doanh số 210.000.000; “KH thành viên nếu 6.000.000 <doanh số<10.000.000; “KH
 --thân thiết” nếu doanh số <6.000.000 (ghi chú: Doanh số là số tiền mà khách mua
 --hàng).
---Y
+CREATE PROCEDURE GetCustomerType
+@MaKhachHang VARCHAR(10)
+AS
+BEGIN
+	DECLARE @DoanhSo DECIMAL(18, 2)
+	SELECT @DoanhSo = SUM(TongTien) 
+	FROM HoaDon 
+	WHERE MaKhachHang = @MaKhachHang
+
+	SELECT CASE
+		WHEN @DoanhSo >= 210000000 THEN 'VIP'
+		WHEN @DoanhSo BETWEEN 6000000 AND 10000000 THEN 'KH thành viên'
+		ELSE 'KH thân thiết'
+	END AS LoaiKhachHang
+END
 --7.9. Viết thủ tục truyền vào mã hàng sẽ trả về ngày cập nhật đơn giá gần nhất.
+CREATE PROCEDURE GetLastPriceUpdateDate
+@MaHang VARCHAR(10)
+AS
+BEGIN
+	SELECT TOP 1 NgayCapNhat 
+	FROM LichSuGia 
+	WHERE MaHang = @MaHang 
+	ORDER BY NgayCapNhat DESC
+END
 --7.10. Viết lại các câu g, f bằng cấu trúc hàm
+--7.7
+CREATE FUNCTION GetProductDetails(@MaHang VARCHAR(10))
+RETURNS TABLE
+AS
+RETURN 
+(
+	SELECT TenHang, TenNhaSanXuat, TenNhaCungCap 
+	FROM HangHoa 
+	WHERE MaHang = @MaHang
+)
+
+--7.8
+CREATE FUNCTION GetCustomerType(@MaKhachHang VARCHAR(10))
+RETURNS VARCHAR(50)
+AS
+BEGIN
+	DECLARE @DoanhSo DECIMAL(18, 2)
+	SELECT @DoanhSo = SUM(TongTien) 
+	FROM HoaDon 
+	WHERE MaKhachHang = @MaKhachHang
+
+	RETURN CASE
+		WHEN @DoanhSo >= 210000000 THEN 'VIP'
+		WHEN @DoanhSo BETWEEN 6000000 AND 10000000 THEN 'KH thành viên'
+		ELSE 'KH thân thiết'
+	END
+END
+
+--7.9
+CREATE FUNCTION GetLastPriceUpdateDate(@MaHang VARCHAR(10))
+RETURNS DATE
+AS
+BEGIN
+	RETURN (SELECT TOP 1 NgayCapNhat 
+	FROM LichSuGia 
+	WHERE MaHang = @MaHang 
+	ORDER BY NgayCapNhat DESC)
+END
 
 --bài tập 6
 create database db_sinhvien_6
