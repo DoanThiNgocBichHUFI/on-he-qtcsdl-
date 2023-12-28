@@ -57,7 +57,7 @@ END
 --bài tập 1
 declare @hoten varchar(20)
 declare @tuoi int
-set @hoten= N'Huu Chien'
+set @hoten= N'ho ten 1'
 set @tuoi= 20
 
 --print @hoten
