@@ -11,6 +11,10 @@ insert into ThiSinh (SBD,HoTen,KhuVuc,DiemThem) values
 		('C1001',N'Vo Van Viet',1,null),
 		('A1002',N'Trinh Dinh Dong',3,null)
 
+--Dùng cấu trúc cursor để cập nhật giá trị vào cột DIEMTHEM với điều kiện như sau:
+--KHUVUC = 1: DIEMTHEM = 0
+--KHUVUC = 2: DIEMTHEM = 0.5
+--KHUVUC = 3: DIEMTHEM = 1
 DECLARE @SBD VARCHAR(10), @KhuVuc INT
 DECLARE cursor_ThiSinh CURSOR FOR 
 SELECT SBD, KhuVuc FROM ThiSinh
