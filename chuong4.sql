@@ -8,3 +8,6 @@ Chương 4: Bảo mật và an toàn dữ liệu
 - Lỗi user vô ý xóa, thao tác sai làm hư csdl.
 - Hành vi cố ý đưa thông tin sai lạc.
 - Bị hack.
+----------------------
+2. Các mô hình phục hồi:
+- Full Recovery Model, Bulk Logged Recovery Model, Simple recovery Model.
